@@ -30,5 +30,6 @@ Run the following commands to verify your Ollama models and launch the stack:
 ollama list
 cp .env.example .env
 docker compose up -d
+```
 
 Part of the [homelab](https://github.com/AurelSto/homelab) infrastructure. 
