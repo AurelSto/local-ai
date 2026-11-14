@@ -16,6 +16,27 @@ For a complete visual system topology and data flow map, see the [Architecture O
 
 ---
 
+## **Hardware & Performance Benchmarks**
+
+Tested on **Ubuntu Linux**, **Intel Core i5-9500 (6 Cores / 6 Threads @ 3.00GHz)**, and **16GB DDR4 RAM**. Inference is executed locally via CPU-bound Ollama execution.
+
+### **1. Model Performance & Inference Speed**
+| Model | Parameters / Quantization | Prompt Eval Rate | Generation Speed (Tokens/Sec) | Test Payload / Use Case |
+| :--- | :--- | :--- | :--- | :--- |
+| **Qwen 2.5** | 7B (Q4_K_M) | 5.07 t/s | **5.04 t/s** | 338 tokens generated in 1m 7s (Deep reasoning & code) |
+| **Qwen 2.5** | 3B | 71.80 t/s | **11.83 t/s** | 204 tokens generated in 26.5s (Low-latency queries) |
+
+### **2. System RAM Footprint & Resource Impact**
+| System State | Used RAM | Available RAM | Model RAM Delta |
+| :--- | :--- | :--- | :--- |
+| **Baseline (Idle)** | 6.4 GiB | 8.1 GiB | — |
+| **Active (3B Model Resident)** | 8.2 GiB | 6.4 GiB | **~1.8 GiB** |
+| **Active (7B Model Resident)** | 10.0 GiB | 4.2 GiB | **~3.6 GiB** |
+
+> **Engineering Takeaway:** On an LGA1151 CPU-bound platform, scaling down from the 7B to the 3B model more than doubles generation speed (**11.83 t/s** vs **5.04 t/s**) and halves the memory residency footprint (**~1.8 GiB** vs **~3.6 GiB**). This preserves a comfortable ~6.4 GiB of available system headroom, allowing concurrent container microservices (Immich, Paperless-ngx, AnythingLLM) to run uninterrupted without triggering swap memory usage.
+
+---
+
 ## Design Decisions
 
 * **Hybrid Native + Container Split:** Running Ollama directly on bare-metal Ubuntu avoids container overhead and gives `llama.cpp` direct access to the i5-9500's CPU threads and memory bandwidth, while AnythingLLM stays isolated in Docker.
