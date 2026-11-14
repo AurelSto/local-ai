@@ -4,6 +4,8 @@ Local LLM inference, vision processing, and Retrieval-Augmented Generation (RAG)
 
 ## Architecture
 
+For a complete visual system topology and data flow map, see the [Architecture Overview](ARCHITECTURE.md).
+
 | Layer | Component | Deployment | Role |
 | :--- | :--- | :--- | :--- |
 | **Inference Engine** | Ollama | Native (`systemd`) | Direct CPU/AVX2 execution of quantized GGUF models on port `11434` |
