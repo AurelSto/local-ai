@@ -43,7 +43,6 @@ Tested on **Ubuntu Linux**, **Intel Core i5-9500 (6 Cores / 6 Threads @ 3.00GHz)
 * **Impact of a Discrete GPU (VRAM Offloading):** Integrating a discrete GPU would shift model layers entirely into high-bandwidth VRAM, eliminating CPU memory-bandwidth bottlenecks, accelerating generation speeds drastically, and enabling full-layer offload for larger models.
 * **Future Upgrade Roadmap (Planned):** Integration of an **NVIDIA T1000 (4GB or 8GB Low Profile)**. 
   - *Form Factor & Power Fit:* Ideal for the HP SFF chassis—it requires no external PCIe power cables (drawing under 50W entirely from the slot) and fits low-profile backplates.
-  - *Performance Target:* VRAM offloading for the 7B model and larger, bypassing CPU token-generation limits.
 
 ---
 
