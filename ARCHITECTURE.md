@@ -1,34 +1,35 @@
-# Local AI Architecture Overview
-
-System topology and data flow for the hybrid native/containerized AI stack running on `lord-of-the-pings` (Intel Core i5-9500, 16GB DDR4, Ubuntu Linux).
-
 ```mermaid
-flowchart TD
-    User([User / Browser]) -->|HTTP :3001| AnythingLLM
+flowchart LR
+    Phone[Device on tailnet] -->|Tailscale| UI["AnythingLLM :3001 (Docker, bound to Tailscale IP)"]
+    UI -->|host.docker.internal:11434| OLL[Ollama, native systemd]
+    OLL --> M1[qwen2.5:3b / 7b]
+    OLL --> M2[qwen2.5vl:3b]
+    OLL --> M3[nomic-embed-text]
+    UI --> VOL[(anythingllm_storage volume)]
+```
 
-    subgraph Host ["lord-of-the-pings (Ubuntu Bare Metal)"]
-        subgraph Docker ["Docker Bridge Network"]
-            AnythingLLM["AnythingLLM Container<br/>(RAG Pipeline & Web UI)"]
-            LanceDB[("LanceDB<br/>(Vector Storage)")]
-            Storage[("Docker Volume<br/>anythingllm_storage")]
+## Network path
 
-            AnythingLLM <--> LanceDB
-            AnythingLLM <--> Storage
-        end
+1. A tailnet device opens `http://<tailscale-ip>:3001`.
+2. AnythingLLM runs on the `local-ai_default` bridge network and calls Ollama through the `host-gateway` alias, which resolves to the Docker bridge address of the host.
+3. UFW allows that traffic only from the AnythingLLM subnet. Without this rule the connection is silently dropped, because Docker-originated traffic is not covered by the `tailscale0` allow rule.
 
-        subgraph Native ["Native systemd Services"]
-            Ollama["Ollama Daemon<br/>(CPU / AVX2 Inference)<br/>:11434"]
+## Exposure
 
-            subgraph Models ["Local Model Registry"]
-                LLM["qwen2.5:3b / 7b<br/>(Text & Code)"]
-                VLM["qwen2.5vl:3b<br/>(Vision / Multimodal)"]
-                Embed["nomic-embed-text<br/>(Embeddings)"]
-            end
+| Component | Binding | Protected by |
+| --- | --- | --- |
+| AnythingLLM | `<tailscale-ip>:3001` | Bind address (tailnet only) |
+| Ollama | `*:11434` (`OLLAMA_HOST=0.0.0.0`) | UFW: tailnet and AnythingLLM subnet only |
 
-            Ollama --- LLM
-            Ollama --- VLM
-            Ollama --- Embed
-        end
+Ollama must listen beyond loopback so the container can reach it, so the firewall is the control. A tighter option is binding Ollama to the Docker bridge address only, at the cost of breaking host-local clients on `127.0.0.1`.
 
-        AnythingLLM <-->|"host.docker.internal:11434<br/>(host-gateway)"| Ollama
-    end
+## State
+
+- Ollama models: `~/.ollama` (not committed).
+- AnythingLLM data: external Docker volume `anythingllm_storage` (back it up before upgrades).
+- Configuration: `.env` (git-ignored); `.env.example` documents the variables.
+
+## Operational notes
+
+- The compose file currently tracks `latest`; pin the image tag for reproducible deployments.
+- Pin the network subnet in `compose.yaml` so the UFW rule cannot drift if the network is recreated.
