@@ -4,7 +4,7 @@ services:
     container_name: anythingllm
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "100.90.170.107:3001:3001"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     cap_add:
